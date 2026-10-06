@@ -1,8 +1,10 @@
 """Create aligned grid inputs for the visual-sensor optimization code.
 
 All four generated arrays share the coordinate origin and shape derived from
-``--total``.  The default settings reproduce the grid discretization used by
-the study: 5 m horizontal cells and 2 m vertical layers.
+``--map``. The same full-site map PCD is used both to define the spatial
+extent and to generate the height-layer grid. The default settings reproduce
+the grid discretization used by the study: 5 m horizontal cells and 2 m
+vertical layers.
 """
 
 from __future__ import annotations
@@ -154,10 +156,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Convert PCD files into aligned grid inputs for CCTV optimization."
     )
-    parser.add_argument("--total", required=True, help="PCD defining the full monitoring area and grid extent.")
-    parser.add_argument("--layer", help="PCD used for terrain/obstacle heights. Defaults to --total.")
-    parser.add_argument("--installable", required=True, help="PCD of feasible camera-installation cells.")
-    parser.add_argument("--ignore", required=True, help="PCD of cells excluded from monitoring coverage.")
+    parser.add_argument(
+        "--map",
+        required=True,
+        help="Full-site PCD used for both grid extent and terrain/obstacle height layers.",
+    )
+    parser.add_argument("--installable", required=True, help="PCD of feasible camera-installation areas.")
+    parser.add_argument("--ignore", required=True, help="PCD of areas excluded from coverage evaluation.")
     parser.add_argument(
         "--output",
         default=None,
@@ -177,26 +182,25 @@ def main() -> None:
         "--z-origin",
         type=float,
         default=None,
-        help="Optional vertical reference elevation in metres. Default: minimum Z of the layer PCD.",
+        help="Optional vertical reference elevation in metres. Default: minimum Z of the map PCD.",
     )
     args = parser.parse_args()
 
     if args.grid_size <= 0 or args.layer_height <= 0 or args.max_layer < 0:
         parser.error("grid-size and layer-height must be positive; max-layer must be zero or greater.")
 
-    total_path, total_points = read_required(args.total, "Total-area")
-    layer_path, layer_points = read_required(args.layer or args.total, "Layer")
+    map_path, map_points = read_required(args.map, "Map")
     installable_path, installable_points = read_required(args.installable, "Installable-area")
     ignore_path, ignore_points = read_required(args.ignore, "Ignore-area")
 
-    x_min, y_min, n_rows, n_cols = make_reference_grid(total_points, args.grid_size)
-    z_origin = float(layer_points[:, 2].min()) if args.z_origin is None else float(args.z_origin)
+    x_min, y_min, n_rows, n_cols = make_reference_grid(map_points, args.grid_size)
+    z_origin = float(map_points[:, 2].min()) if args.z_origin is None else float(args.z_origin)
 
-    total_grid = rasterize_binary(total_points, x_min, y_min, n_rows, n_cols, args.grid_size)
+    total_grid = rasterize_binary(map_points, x_min, y_min, n_rows, n_cols, args.grid_size)
     installable_grid = rasterize_binary(installable_points, x_min, y_min, n_rows, n_cols, args.grid_size)
     ignore_grid = rasterize_binary(ignore_points, x_min, y_min, n_rows, n_cols, args.grid_size)
     layer_grid = rasterize_layers(
-        layer_points,
+        map_points,
         x_min,
         y_min,
         n_rows,
@@ -222,8 +226,7 @@ def main() -> None:
         "origin_xy": [x_min, y_min],
         "shape_rows_cols": [n_rows, n_cols],
         "source_files": {
-            "total": str(total_path),
-            "layer": str(layer_path),
+            "map": str(map_path),
             "installable": str(installable_path),
             "ignore": str(ignore_path),
         },
@@ -245,7 +248,7 @@ def main() -> None:
         print(
             "Warning: "
             f"{int(missing_layer_installable.sum())} installable cells have no layer points. "
-            "Check the layer PCD before optimization."
+            "Check the map PCD before optimization."
         )
 
 
