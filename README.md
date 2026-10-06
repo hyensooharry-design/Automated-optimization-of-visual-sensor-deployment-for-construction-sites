@@ -73,21 +73,28 @@ python -m pip install -r preprocessing/requirements.txt
 
 ## PCD preprocessing
 
-The preprocessing utility generates the four aligned arrays required by both optimization models:
+The preprocessing step uses **three PCD input files**:
+
+- `map.pcd`: the full construction-site point cloud, used both to define the grid extent and to generate the height-layer representation.
+- `installable_map.pcd`: the areas where CCTV installation is feasible.
+- `ignore_map.pcd`: the areas excluded from coverage evaluation.
+
+All three PCD files should use the same coordinate system and spatial units.
+
+The preprocessing utility converts these three inputs into the four aligned NumPy arrays required by both optimization models:
 
 ```bash
 python preprocessing/pcd_to_grids.py \
-  --total "raw/total_map.pcd" \
-  --layer "raw/map.pcd" \
+  --map "raw/map.pcd" \
   --installable "raw/installable_map.pcd" \
   --ignore "raw/ignore_map.pcd"
 ```
 
-If `--layer` is omitted, the `--total` PCD is also used as the height source. By default, the generated arrays are written to the repository-level `data/` directory.
+The installable and excluded areas are not inferred automatically from the full-site map; the corresponding PCD files must be prepared separately. By default, the generated arrays are written to the repository-level `data/` directory.
 
 Relative input paths are resolved from the current working directory. The default output location is anchored to the repository itself, so the preprocessing script can be called from another working directory without redirecting the generated grids away from the optimizer's expected `data/` folder.
 
-See [`preprocessing/README.md`](preprocessing/README.md) for the complete preprocessing and path rules.
+See [`preprocessing/README.md`](preprocessing/README.md) for detailed input preparation, preprocessing, and path rules.
 
 ## Input data
 
