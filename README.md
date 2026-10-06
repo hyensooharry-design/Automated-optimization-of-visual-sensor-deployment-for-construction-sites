@@ -43,6 +43,19 @@ The optimization determines CCTV positions and viewing directions while consider
     └── runtime_oriented/
 ```
 
+## Method summary
+
+The implementation follows the main optimization pipeline presented in the paper:
+
+1. **PCD-to-grid preprocessing**
+2. **Grid-based construction-site modeling**
+3. **Candidate-space reduction**
+4. **Greedy initial solution generation**
+5. **Metaheuristic solution refinement**
+   - Simulated Annealing for the Precision-oriented Model
+   - Late Acceptance Hill Climbing for the Runtime-oriented Model
+6. **Deployment visualization and result export**
+
 ## Experimental settings
 
 The main experiments reported in the paper use the following common settings:
@@ -148,19 +161,6 @@ Depending on the model, outputs include:
 - frame images and an optimization video for the Precision-oriented Model.
 
 The repository also retains the selected result artifacts used for the original Precision-oriented and Runtime-oriented experiments.
-
-## Method summary
-
-The implementation follows the main optimization pipeline presented in the paper:
-
-1. **PCD-to-grid preprocessing**
-2. **Grid-based construction-site modeling**
-3. **Candidate-space reduction**
-4. **Greedy initial solution generation**
-5. **Metaheuristic solution refinement**
-   - Simulated Annealing for the Precision-oriented Model
-   - Late Acceptance Hill Climbing for the Runtime-oriented Model
-6. **Deployment visualization and result export**
 
 ## Citation
 
