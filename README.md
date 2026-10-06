@@ -8,7 +8,7 @@ DOI: https://doi.org/10.1016/j.autcon.2026.107264
 
 ## Overview
 
-This repository contains the implementation of the visual sensor deployment framework proposed in the paper. The framework converts construction-site spatial information into a grid-based representation, generates an initial CCTV deployment using a Greedy algorithm, and improves the solution using one of two optimization models.
+This repository contains the implementation of the visual sensor deployment framework proposed in the paper. The workflow converts construction-site point-cloud information into a grid-based representation, generates an initial CCTV deployment using a Greedy algorithm, and improves the solution using one of two optimization models.
 
 - **Precision-oriented Model**: Greedy initialization + Simulated Annealing (SA), designed for higher-quality deployment planning when additional computation time is available.
 - **Runtime-oriented Model**: candidate reduction + Greedy initialization + Late Acceptance Hill Climbing (LAHC), designed for rapid redeployment under a strict computation-time limit.
@@ -21,6 +21,10 @@ The optimization determines CCTV positions and viewing directions while consider
 .
 ├── README.md
 ├── requirements.txt
+├── preprocessing/
+│   ├── pcd_to_grids.py
+│   ├── README.md
+│   └── requirements.txt
 ├── data/
 │   └── README.md
 ├── precision_oriented/
@@ -46,6 +50,7 @@ The main experiments reported in the paper use the following common settings:
 | Parameter | Setting |
 |---|---:|
 | Grid resolution | 5 m |
+| Vertical layer height | 2 m |
 | Target coverage | 95% |
 | Horizontal FOV | 60° |
 | Detection range | 200 m |
@@ -54,17 +59,39 @@ The model-specific hyperparameters are defined in the corresponding implementati
 
 ## Installation
 
-Python 3 is required. Install the dependencies from the repository root:
+Python 3 is required. Install the optimization dependencies from the repository root:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Main dependencies are NumPy, pandas, Matplotlib, openpyxl, and imageio.
+To generate the optimization grids directly from PCD files, also install the preprocessing dependencies:
+
+```bash
+python -m pip install -r preprocessing/requirements.txt
+```
+
+## PCD preprocessing
+
+The preprocessing utility generates the four aligned arrays required by both optimization models:
+
+```bash
+python preprocessing/pcd_to_grids.py \
+  --total "raw/total_map.pcd" \
+  --layer "raw/map.pcd" \
+  --installable "raw/installable_map.pcd" \
+  --ignore "raw/ignore_map.pcd"
+```
+
+If `--layer` is omitted, the `--total` PCD is also used as the height source. By default, the generated arrays are written to the repository-level `data/` directory.
+
+Relative input paths are resolved from the current working directory. The default output location is anchored to the repository itself, so the preprocessing script can be called from another working directory without redirecting the generated grids away from the optimizer's expected `data/` folder.
+
+See [`preprocessing/README.md`](preprocessing/README.md) for the complete preprocessing and path rules.
 
 ## Input data
 
-Place the following files in the root `data/` directory before running either model:
+Both optimization models read:
 
 ```text
 data/
@@ -74,7 +101,7 @@ data/
 └── total_grid.npy
 ```
 
-See [`data/README.md`](data/README.md) for a description of each input array.
+All four arrays must use the same origin and shape. The preprocessing utility also writes `grid_metadata.json` with the common grid reference information.
 
 The real construction-site datasets used in the paper are not distributed in this repository. The paper states that the datasets and code used in the study are available upon reasonable request.
 
@@ -95,6 +122,8 @@ python runtime_oriented/main.py
 ```
 
 This model performs candidate reduction and Greedy initialization followed by LAHC refinement under the runtime-oriented search configuration.
+
+Both entry points derive the `data/` and `results/` locations from their own file paths rather than the terminal's current working directory.
 
 ## Outputs
 
@@ -117,13 +146,14 @@ The repository also retains the selected result artifacts used for the original 
 
 The implementation follows the main optimization pipeline presented in the paper:
 
-1. **Grid-based construction-site modeling**
-2. **Candidate-space reduction**
-3. **Greedy initial solution generation**
-4. **Metaheuristic solution refinement**
+1. **PCD-to-grid preprocessing**
+2. **Grid-based construction-site modeling**
+3. **Candidate-space reduction**
+4. **Greedy initial solution generation**
+5. **Metaheuristic solution refinement**
    - Simulated Annealing for the Precision-oriented Model
    - Late Acceptance Hill Climbing for the Runtime-oriented Model
-5. **Deployment visualization and result export**
+6. **Deployment visualization and result export**
 
 ## Citation
 
