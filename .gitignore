@@ -1,3 +1,9 @@
-Thumbs.db
+__pycache__/
+*.py[cod]
+*.npy
+*.npz
+.venv/
+venv/
 .DS_Store
+Thumbs.db
 ~$*.xlsx
